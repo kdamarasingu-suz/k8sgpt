@@ -1,0 +1,30 @@
+# ArgoCD Application definition - the GitOps/CD half of this demo.
+# ArgoCD watches this repository and keeps the checkout-oom-demo namespace in
+# sync with whatever is committed under manifests/live. GitHub Actions (see
+# .github/workflows/) handles CI: building/pushing the checkout-worker image
+# and running k8sgpt diagnostics on demand. Neither workflow ever runs
+# `kubectl apply` by hand against manifests/live - the fix is applied by
+# committing corrected manifests to git and letting ArgoCD reconcile them.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: checkout-oom-demo
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/kdamarasingu-suz/k8sgpt-oomkilled-argocd-demo.git
+    targetRevision: main
+    path: manifests/live
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: checkout-oom-demo
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
