@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkout-worker
+  namespace: checkout-oom-demo
+  labels:
+    app: checkout-worker
+spec:
+  selector:
+    app: checkout-worker
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
