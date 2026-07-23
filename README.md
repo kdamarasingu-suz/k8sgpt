@@ -1,4 +1,4 @@
-# k8sgpt-oomkilled-argocd-demo
+# k8sgpt
 
 A from-scratch, runnable reproduction of one of the most common real-world
 Kubernetes incidents - a critical workload getting **OOMKilled** and cycling
