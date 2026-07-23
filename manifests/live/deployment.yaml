@@ -1,0 +1,42 @@
+# BROKEN: memory limit set far below what this workload actually needs (and
+# no memory request at all), so the scheduler under-accounts for it and the
+# container gets OOMKilled almost immediately once real traffic arrives.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout-worker
+  namespace: checkout-oom-demo
+  labels:
+    app: checkout-worker
+    scenario: oomkilled
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: checkout-worker
+  template:
+    metadata:
+      labels:
+        app: checkout-worker
+    spec:
+      containers:
+        - name: checkout-worker
+          image: checkout-worker:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ORDERS_PER_SEC
+              value: "30"
+          resources:
+            limits:
+              memory: "20Mi"
+            # <-- No memory/cpu request, and a limit far too low for the
+            #     real memory usage this workload needs. This is the bug.
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            failureThreshold: 1
