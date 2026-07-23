@@ -1,0 +1,52 @@
+# FIXED: requests/limits sized to what the workload actually needs (measured
+# from the same image's real memory behavior), plus readiness/liveness probes
+# with sane thresholds so a transient hiccup doesn't trigger a restart storm.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout-worker
+  namespace: checkout-oom-demo
+  labels:
+    app: checkout-worker
+    scenario: oomkilled
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: checkout-worker
+  template:
+    metadata:
+      labels:
+        app: checkout-worker
+    spec:
+      containers:
+        - name: checkout-worker
+          image: checkout-worker:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ORDERS_PER_SEC
+              value: "30"
+            - name: HISTORY_CEILING
+              value: "500"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "160Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
