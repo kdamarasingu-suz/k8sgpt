@@ -1,0 +1,45 @@
+# Manual-dispatch workflow that runs k8sgpt against your cluster and records
+# the diagnosis. This requires a KUBE_CONFIG repository secret (base64-encoded
+# kubeconfig for a real cluster - kind/k3d/managed K8s; NOT minikube) with
+# access to the checkout-oom-demo namespace, and (optionally) an OPENAI_API_KEY
+# secret if you want k8sgpt's --explain flag to use an AI backend.
+name: k8sgpt-diagnose
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Install k8sgpt
+        run: |
+          curl -sLO https://github.com/k8sgpt-ai/k8sgpt/releases/latest/download/k8sgpt_amd64.deb
+          sudo dpkg -i k8sgpt_amd64.deb
+
+      - name: Configure k8sgpt backend
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
+        run: |
+          k8sgpt auth add --backend openai --model gpt-4o-mini --password "${{ secrets.OPENAI_API_KEY }}"
+
+      - name: Run k8sgpt analyze
+        run: |
+          echo "### k8sgpt analyze (namespace-scoped) ###"
+          k8sgpt analyze --explain --filter=Pod --namespace checkout-oom-demo | tee k8sgpt-report.txt
+
+      - name: Upload diagnosis as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8sgpt-report
+          path: k8sgpt-report.txt
