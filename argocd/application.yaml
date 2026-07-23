@@ -14,7 +14,7 @@ spec:
   project: default
 
   source:
-    repoURL: https://github.com/kdamarasingu-suz/k8sgpt-oomkilled-argocd-demo.git
+    repoURL: https://github.com/kdamarasingu-suz/k8sgpt.git
     targetRevision: main
     path: manifests/live
 
