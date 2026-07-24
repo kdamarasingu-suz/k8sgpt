@@ -78,8 +78,6 @@ and `k8sgpt` CLIs installed locally.
 # 3. Diagnose with k8sgpt
 k8sgpt analyze --explain --filter=Pod --namespace checkout-oom-demo
 
-# 4. Apply the fix via GitOps (commits + pushes, ArgoCD auto-syncs)
-./scripts/03-apply-fix-via-git.sh
 ```
 
 See `docs/incident-walkthrough.md` for the full walkthrough with sample
