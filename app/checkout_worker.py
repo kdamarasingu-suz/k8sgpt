@@ -1,25 +1,3 @@
-"""
-checkout_worker.py - a minimal, from-scratch "checkout service" simulator.
-
-This stands in for a real payment/checkout microservice for the purposes of
-this demo: it accepts HTTP requests and, for each one, does a small amount of
-real work that legitimately needs memory (building a receipt/cart object and
-keeping a short-lived history buffer). Under sustained traffic this pushes
-memory usage up in a way that is realistic, not artificial.
-
-When the container has no resources.requests/limits (or a limit set far below
-what the workload actually needs), the Linux kernel OOM killer or the kubelet
-eventually kills the process once the node or cgroup runs out of memory -
-this shows up in `kubectl describe pod` as "OOMKilled" / Exit Code 137, and
-the Deployment cycles into CrashLoopBackOff as Kubernetes keeps restarting it.
-
-Environment variables:
-  ORDERS_PER_SEC     simulated checkout throughput (affects memory growth rate)
-  HISTORY_CEILING    if set, cap the in-memory order history at this many
-                     entries (the "fixed" manifest sets this to a sane bound;
-                     the "broken" manifest leaves it unset)
-"""
-
 import os
 import threading
 import time
