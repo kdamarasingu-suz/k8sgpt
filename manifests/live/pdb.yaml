@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: checkout-worker-pdb
+  namespace: checkout-oom-demo
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: checkout-worker
