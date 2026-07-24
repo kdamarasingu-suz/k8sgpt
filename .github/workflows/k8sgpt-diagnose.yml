@@ -1,8 +1,7 @@
-# Manual-dispatch workflow that runs k8sgpt against your cluster and records
-# the diagnosis. This requires a KUBE_CONFIG repository secret (base64-encoded
-# kubeconfig for a real cluster - kind/k3d/managed K8s; NOT minikube) with
-# access to the checkout-oom-demo namespace, and (optionally) an OPENAI_API_KEY
-# secret if you want k8sgpt's --explain flag to use an AI backend.
+# Manual-dispatch workflow that spins up a throwaway local kind cluster,
+# deploys the checkout-oom-demo manifests from this repo, and runs k8sgpt
+# against it. No secrets or external credentials are required - everything
+# runs self-contained on the GitHub Actions runner.
 name: k8sgpt-diagnose
 
 on:
@@ -15,31 +14,45 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
-
       - name: Install kubectl
-        uses: azure/setup-kubectl@v4
+        run: |
+          curl -sLO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+      - name: Install kind
+        run: |
+          curl -sLo ./kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
+      - name: Create local cluster
+        run: kind create cluster --name k8sgpt-demo
+
+      - name: Deploy demo manifests
+        run: |
+          kubectl apply -f manifests/live/namespace.yaml
+          kubectl apply -f manifests/live/deployment.yaml
+          kubectl apply -f manifests/live/service.yaml
+          kubectl apply -f manifests/live/pdb.yaml
+          kubectl -n checkout-oom-demo rollout status deployment --timeout=120s || true
 
       - name: Install k8sgpt
         run: |
           curl -sLO https://github.com/k8sgpt-ai/k8sgpt/releases/latest/download/k8sgpt_amd64.deb
           sudo dpkg -i k8sgpt_amd64.deb
 
-      - name: Configure k8sgpt backend
-        if: ${{ secrets.OPENAI_API_KEY != '' }}
-        run: |
-          k8sgpt auth add --backend openai --model gpt-4o-mini --password "${{ secrets.OPENAI_API_KEY }}"
-
       - name: Run k8sgpt analyze
         run: |
           echo "### k8sgpt analyze (namespace-scoped) ###"
-          k8sgpt analyze --explain --filter=Pod --namespace checkout-oom-demo | tee k8sgpt-report.txt
+          k8sgpt analyze --filter=Pod --namespace checkout-oom-demo | tee k8sgpt-report.txt
 
       - name: Upload diagnosis as artifact
         uses: actions/upload-artifact@v4
         with:
           name: k8sgpt-report
           path: k8sgpt-report.txt
+
+      - name: Delete local cluster
+        if: always()
+        run: kind delete cluster --name k8sgpt-demo
