@@ -57,9 +57,7 @@ manifests/live/              BROKEN manifests (what ArgoCD deploys initially)
 manifests/reference-fixed/   FIXED manifests (correct requests/limits, PDB)
 argocd/application.yaml      ArgoCD Application (GitOps CD)
 .github/workflows/           GitHub Actions (CI + on-demand k8sgpt diagnosis)
-scripts/                     Bootstrap, observe, and remediate helper scripts
-docs/incident-walkthrough.md Full step-by-step reproduction walkthrough
-docs/postmortem.md           Blameless postmortem for the modeled incident
+scripts/                     Bootstrap and observe helper scripts
 ```
 
 ## Quick start
@@ -79,10 +77,6 @@ and `k8sgpt` CLIs installed locally.
 k8sgpt analyze --explain --filter=Pod --namespace checkout-oom-demo
 
 ```
-
-See `docs/incident-walkthrough.md` for the full walkthrough with sample
-(illustratively labeled) k8sgpt output, and `docs/postmortem.md` for a full
-blameless postmortem of the modeled incident.
 
 ## Required repository secrets (for the GitHub Actions workflows)
 
